@@ -27,18 +27,19 @@ async function startBot() {
 
     sock.ev.on('creds.update', saveCreds)
 
-    // Automatically request a pairing code in Render logs if not logged in
+    // Explicitly request pairing code if not logged in
     if (!sock.authState.creds.registered) {
         setTimeout(async () => {
             try {
-                const code = await sock.requestPairingCode(PHONE_NUMBER)
-                console.log(`========================================`)
-                console.log(` YOUR WHATSAPP PAIRING CODE: ${code}`)
-                console.log(`========================================`)
+                console.log("Attempting to request pairing code for number:", PHONE_NUMBER);
+                const code = await sock.requestPairingCode(PHONE_NUMBER);
+                console.log("\n========================================");
+                console.log(`  YOUR WHATSAPP PAIRING CODE: ${code}`);
+                console.log("========================================\n");
             } catch (err) {
-                console.error('Failed to request pairing code:', err.message || err)
+                console.error("ERROR GENERATING PAIRING CODE:", err);
             }
-        }, 5000)
+        }, 3000);
     }
 
     sock.ev.on('connection.update', (update) => {
