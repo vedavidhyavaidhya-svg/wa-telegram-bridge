@@ -27,21 +27,22 @@ async function startBot() {
 
     sock.ev.on('creds.update', saveCreds)
 
-    // Explicitly request pairing code if not logged in
+    // Force code request if not registered
     if (!sock.authState.creds.registered) {
+        console.log("--> Session is fresh. Requesting pairing code in 5 seconds...")
         setTimeout(async () => {
             try {
-                console.log("Attempting to request pairing code for number:", PHONE_NUMBER);
-                const code = await sock.requestPairingCode(PHONE_NUMBER);
-                console.log("\n========================================");
-                console.log(`  YOUR WHATSAPP PAIRING CODE: ${code}`);
-                console.log("========================================\n");
+                const code = await sock.requestPairingCode(PHONE_NUMBER)
+                console.log("\n========================================")
+                console.log(`  YOUR WHATSAPP PAIRING CODE: ${code}`)
+                console.log("========================================\n")
             } catch (err) {
-                console.error("ERROR GENERATING PAIRING CODE:", err);
+                console.error("--> ERROR GENERATING CODE:", err)
             }
-        }, 3000);
+        }, 5000)
+    } else {
+        console.log("--> System believes it is already registered.")
     }
-
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update
         if (connection === 'open') {
