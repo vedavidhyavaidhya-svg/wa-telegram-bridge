@@ -9,9 +9,9 @@ http.createServer((req, res) => {
 }).listen(process.env.PORT || 3000)
 
 // --- 2. CONFIGURATION ---
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const CHANNEL_ID = '120363428595746153@newsletter' // YOUR WHATSAPP CHANNEL ID
-const PHONE_NUMBER = '919962666671' // YOUR PHONE NUMBER
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN'
+const CHANNEL_ID = '120363428595746153@newsletter' // Replace with your WhatsApp Channel JID
+const PHONE_NUMBER = '919962666671' // Replace with your WhatsApp phone number with country code
 
 const tgBot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true })
 let mediaQueue = []
@@ -25,11 +25,12 @@ async function startBot() {
 
     sock.ev.on('creds.update', saveCreds)
 
+    // --- 3. WHATSAPP CONNECTION & PAIRING HANDLER ---
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect } = update
 
         if (connection === 'connecting' && !sock.authState.creds.registered) {
-            console.log("--> Connecting... Requesting pairing code in 3 seconds...")
+            console.log("--> Connecting to WhatsApp... Requesting pairing code in 3 seconds...")
             setTimeout(async () => {
                 try {
                     const code = await sock.requestPairingCode(PHONE_NUMBER)
@@ -52,8 +53,20 @@ async function startBot() {
         }
     })
 
-    // --- 3. INCOMING TELEGRAM HANDLER (HANDLES BOTH CHATS & CHANNELS) ---
+    // --- 4. WHATSAPP JID LOGGER (PRINT CHANNEL/CHAT ID IN RENDER LOGS) ---
+    sock.ev.on('messages.upsert', async (m) => {
+        const msg = m.messages[0]
+        if (!msg || !msg.key) return
+
+        const id = msg.key.remoteJid
+        console.log(`\n========================================`)
+        console.log(` RECEIVED MESSAGE FROM JID: ${id}`)
+        console.log(`========================================\n`)
+    })
+
+    // --- 5. INCOMING TELEGRAM HANDLER (HANDLES CHATS, GROUPS & CHANNELS) ---
     const handleTelegramMsg = async (msg) => {
+        console.log("--> Received update from Telegram!")
         try {
             if (msg.photo) {
                 const fileId = msg.photo[msg.photo.length - 1].file_id
@@ -76,14 +89,14 @@ async function startBot() {
         }
     }
 
-    // Listen to personal messages AND channel broadcasts
+    // Listen to direct messages AND channel posts
     tgBot.on('message', handleTelegramMsg)
     tgBot.on('channel_post', handleTelegramMsg)
 
-    // --- 4. 15-MINUTE BATCH QUEUE PROCESSOR ---
+    // --- 6. 15-MINUTE BATCH QUEUE PROCESSOR ---
     const processQueueBatch = async () => {
         if (mediaQueue.length === 0) {
-            console.log(`[Scheduler] ${new Date().toLocaleTimeString()} - Queue empty.`)
+            console.log(`[Scheduler] ${new Date().toLocaleTimeString()} - Queue empty. Skipping execution.`)
             return
         }
 
@@ -104,7 +117,7 @@ async function startBot() {
                     await sock.sendMessage(CHANNEL_ID, { text: item.text })
                     console.log(` -> Posted text ${i + 1}/${batch.length}`)
                 }
-                // 2-second delay between batch items to protect account
+                // 2-second rate limit delay between posts
                 await new Promise((resolve) => setTimeout(resolve, 2000))
             } catch (err) {
                 console.error(` -> Post failed for item ${i + 1}:`, err.message || err)
