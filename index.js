@@ -44,14 +44,21 @@ async function startBot() {
         }
 
         if (connection === 'open') {
-            console.log(' Connected to WhatsApp! Waiting for Telegram posts...')
+            console.log(' Connected to WhatsApp!')
+            
+            // Fetch all channels / newsletters you manage or follow
+            try {
+                const newsletters = await sock.newsletterSubscribed()
+                console.log("\n========================================")
+                console.log(" YOUR ACCESSIBLE WHATSAPP CHANNELS:")
+                newsletters.forEach(ch => {
+                    console.log(` Name: ${ch.name} | ID: ${ch.id}`)
+                })
+                console.log("========================================\n")
+            } catch (err) {
+                console.error("Could not fetch newsletters:", err.message || err)
+            }
         }
-
-        if (connection === 'close') {
-            const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-            if (shouldReconnect) startBot()
-        }
-    })
 
     // --- 4. WHATSAPP JID LOGGER (PRINT CHANNEL/CHAT ID IN RENDER LOGS) ---
     sock.ev.on('messages.upsert', async (m) => {
