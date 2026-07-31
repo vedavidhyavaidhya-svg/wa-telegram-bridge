@@ -1,3 +1,11 @@
+import http from 'http'
+
+// Simple health-check server for Render Free Web Service
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' })
+    res.end('WhatsApp-Telegram Bridge is Running!')
+}).listen(process.env.PORT || 3000)
+
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys'
 import TelegramBot from 'node-telegram-bot-api'
 
