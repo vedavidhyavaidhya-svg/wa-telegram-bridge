@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "node-telegram-bot-api": "^1.2.0",
     "qrcode-terminal": "^0.12.0"
   }
 }
